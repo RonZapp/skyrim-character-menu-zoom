@@ -171,6 +171,7 @@ std::string CollapsePercent(std::string s);
 bool IsPlayersMount(const RE::Actor* actor);
 bool IsTargetsMount(const RE::Actor* actor, RE::Actor* target);
 void LoadDataFromINI();
+void LoadCameraSettings();
 static bool IsPlayerInFactionWithRank(const std::string& factionEdid);
 
 #endif  // UTILITY_H

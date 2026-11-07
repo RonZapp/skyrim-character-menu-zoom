@@ -9,8 +9,12 @@ static std::vector<FactionDef> g_factionDefs;
 
 static RE::NiPointer<RE::NiAVObject>    g_blackPlane;
 static RE::NiPointer<RE::TESObjectREFR> g_backdropRef;
-// Menu camera distance multiplier: <1.0 zooms in, >1.0 zooms out (1.0 = original behaviour)
-static constexpr float kMenuZoomScale = 0.80f;
+// Menu camera tuning, read from the [Camera] section of Data/Character Menu SE.ini every time the menu opens.
+// Zoom scale: <1.0 zooms in, >1.0 zooms out (1.0 = original behaviour). Distance override: >0 forces an exact camera distance.
+static float g_camZoomScale        = 0.80f;
+static float g_camDistanceOverride = 0.0f;
+static float g_camOffsetX          = 0.0f;
+static float g_camOffsetZ          = 0.0f;
 
 static RE::NiPoint3                     g_savedThirdPersonTranslation;
 static RE::NiPoint3                     g_savedPosOffsetActual;
@@ -333,6 +337,22 @@ void LoadDataFromINI()
     logger::debug("Loaded blur enabled: {}", enable_blur);
 }
 
+void LoadCameraSettings()
+{
+    CSimpleIniA ini;
+    ini.SetUnicode();
+    if (ini.LoadFile(INI_FILE_PATH.c_str()) < 0) {
+        logger::error("Failed to load INI file for camera settings: {}", INI_FILE_PATH);
+        return;
+    }
+    g_camZoomScale        = static_cast<float>(ini.GetDoubleValue("Camera", "fZoomScale", 0.80));
+    g_camDistanceOverride = static_cast<float>(ini.GetDoubleValue("Camera", "fDistanceOverride", 0.0));
+    g_camOffsetX          = static_cast<float>(ini.GetDoubleValue("Camera", "fOffsetX", 0.0));
+    g_camOffsetZ          = static_cast<float>(ini.GetDoubleValue("Camera", "fOffsetZ", 0.0));
+    logger::info("Camera settings: zoomScale={} distanceOverride={} offsetX={} offsetZ={}", g_camZoomScale,
+                 g_camDistanceOverride, g_camOffsetX, g_camOffsetZ);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // All credit goes to derickso/myztikrice for the original following functions
 // (https://github.com/derickso/ShowPlayerInMenus)
@@ -340,6 +360,7 @@ void LoadDataFromINI()
 
 void RotateCamera(RE::Actor* target)
 {
+    LoadCameraSettings();
     auto* camera        = RE::PlayerCamera::GetSingleton();
     auto* ini           = RE::INISettingCollection::GetSingleton();
     bool  isBeastForm   = false;
@@ -482,41 +503,47 @@ void RotateCamera(RE::Actor* target)
         fNewOverShoulderCombatPosX = g_isUltraWide ? -45.0f : -55.0f;
         fNewOverShoulderCombatPosZ = 35.0f;
 
-        vanityModeMinDist->data.f = 190.0f * kMenuZoomScale;
-        vanityModeMaxDist->data.f = 190.0f * kMenuZoomScale;
+        vanityModeMinDist->data.f = 190.0f * g_camZoomScale;
+        vanityModeMaxDist->data.f = 190.0f * g_camZoomScale;
     }
     else if (targetSitState >= RE::SIT_SLEEP_STATE::kWantToSit && targetSitState <= RE::SIT_SLEEP_STATE::kWantToStand) {
         fNewOverShoulderCombatPosZ = -53.0f + (target->GetHeight() - 130);
-        vanityModeMinDist->data.f  = 155.0f * kMenuZoomScale;
-        vanityModeMaxDist->data.f  = 155.0f * kMenuZoomScale;
+        vanityModeMinDist->data.f  = 155.0f * g_camZoomScale;
+        vanityModeMaxDist->data.f  = 155.0f * g_camZoomScale;
     }
     else if (targetSneakState) {
         fNewOverShoulderCombatPosX = g_isUltraWide ? -38.0f : -50.0f;
         fNewOverShoulderCombatPosZ = -12.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 160.0f * kMenuZoomScale;
-        vanityModeMaxDist->data.f  = 160.0f * kMenuZoomScale;
+        vanityModeMinDist->data.f  = 160.0f * g_camZoomScale;
+        vanityModeMaxDist->data.f  = 160.0f * g_camZoomScale;
     }
     else if (isBeastForm) {
         fNewOverShoulderCombatPosZ = -32.0f + (target->GetHeight() - 130);
-        vanityModeMinDist->data.f  = 210.0f * kMenuZoomScale;
-        vanityModeMaxDist->data.f  = 210.0f * kMenuZoomScale;
+        vanityModeMinDist->data.f  = 210.0f * g_camZoomScale;
+        vanityModeMaxDist->data.f  = 210.0f * g_camZoomScale;
     }
     else if (isVampireLord) {
         fNewOverShoulderCombatPosZ = -37.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 165.0f * kMenuZoomScale;
-        vanityModeMaxDist->data.f  = 165.0f * kMenuZoomScale;
+        vanityModeMinDist->data.f  = 165.0f * g_camZoomScale;
+        vanityModeMaxDist->data.f  = 165.0f * g_camZoomScale;
     }
     else if (target->AsActorState()->IsWeaponDrawn()) {
         fNewOverShoulderCombatPosZ = -32.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 165.0f * kMenuZoomScale;
-        vanityModeMaxDist->data.f  = 165.0f * kMenuZoomScale;
+        vanityModeMinDist->data.f  = 165.0f * g_camZoomScale;
+        vanityModeMaxDist->data.f  = 165.0f * g_camZoomScale;
     }
     else {
         fNewOverShoulderCombatPosZ = -22.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 155.0f * kMenuZoomScale;
-        vanityModeMaxDist->data.f  = 155.0f * kMenuZoomScale;
+        vanityModeMinDist->data.f  = 155.0f * g_camZoomScale;
+        vanityModeMaxDist->data.f  = 155.0f * g_camZoomScale;
     }
 
+    if (g_camDistanceOverride > 0.0f) {
+        vanityModeMinDist->data.f = g_camDistanceOverride;
+        vanityModeMaxDist->data.f = g_camDistanceOverride;
+    }
+    fNewOverShoulderCombatPosX += g_camOffsetX;
+    fNewOverShoulderCombatPosZ += g_camOffsetZ;
     thirdState->freeRotation.x = MATH_PI - 0.5f;
     thirdState->freeRotation.y = 0.0f;
 

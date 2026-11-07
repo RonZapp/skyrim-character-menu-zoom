@@ -13,7 +13,7 @@ static bool IsHelgenIntroLocked()
         return false;
     }
 
-    return quest->IsRunning() && quest->GetCurrentStageID() < 250;
+    return quest->IsRunning() && quest->GetCurrentStageID() > 0 && quest->GetCurrentStageID() < 250;
 }
 
 RE::BSEventNotifyControl EventProcessor::ProcessEvent(const RE::MenuOpenCloseEvent* event,
@@ -149,6 +149,7 @@ RE::BSEventNotifyControl EventProcessor::ProcessEvent(RE::InputEvent* const* eve
                     !ui->IsMenuOpen(RE::CraftingMenu::MENU_NAME) && 
                     !IsHelgenIntroLocked())
                 {
+                    CancelPlayerAutoMove();
                     Scaleform::CharacterSheet::Show();
                     return RE::BSEventNotifyControl::kContinue;
                 } else if (ui->IsMenuOpen(Scaleform::CharacterSheet::MENU_NAME)) {

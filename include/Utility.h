@@ -153,6 +153,7 @@ void RotateCamera(RE::Actor* target);
 void ResetCamera();
 void FreezeNPC(RE::Actor* a_actor);
 void UnfreezeNPC(RE::Actor* a_actor);
+void CancelPlayerAutoMove();
 const TESClass* GetBestMatchingClass(const std::vector<TESClass>& classes,
                                      const std::unordered_map<std::string, float>& skillLevels);
 const TESClass* GetApprenticeClass(const std::map<int, TESClass>& classes);

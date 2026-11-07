@@ -9,6 +9,9 @@ static std::vector<FactionDef> g_factionDefs;
 
 static RE::NiPointer<RE::NiAVObject>    g_blackPlane;
 static RE::NiPointer<RE::TESObjectREFR> g_backdropRef;
+// Menu camera distance multiplier: <1.0 zooms in, >1.0 zooms out (1.0 = original behaviour)
+static constexpr float kMenuZoomScale = 0.80f;
+
 static RE::NiPoint3                     g_savedThirdPersonTranslation;
 static RE::NiPoint3                     g_savedPosOffsetActual;
 static float                            g_savedCurrentZoomOffset;
@@ -479,39 +482,39 @@ void RotateCamera(RE::Actor* target)
         fNewOverShoulderCombatPosX = g_isUltraWide ? -45.0f : -55.0f;
         fNewOverShoulderCombatPosZ = 35.0f;
 
-        vanityModeMinDist->data.f = 190.0f;
-        vanityModeMaxDist->data.f = 190.0f;
+        vanityModeMinDist->data.f = 190.0f * kMenuZoomScale;
+        vanityModeMaxDist->data.f = 190.0f * kMenuZoomScale;
     }
     else if (targetSitState >= RE::SIT_SLEEP_STATE::kWantToSit && targetSitState <= RE::SIT_SLEEP_STATE::kWantToStand) {
         fNewOverShoulderCombatPosZ = -53.0f + (target->GetHeight() - 130);
-        vanityModeMinDist->data.f  = 155.0f;
-        vanityModeMaxDist->data.f  = 155.0f;
+        vanityModeMinDist->data.f  = 155.0f * kMenuZoomScale;
+        vanityModeMaxDist->data.f  = 155.0f * kMenuZoomScale;
     }
     else if (targetSneakState) {
         fNewOverShoulderCombatPosX = g_isUltraWide ? -38.0f : -50.0f;
         fNewOverShoulderCombatPosZ = -12.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 160.0f;
-        vanityModeMaxDist->data.f  = 160.0f;
+        vanityModeMinDist->data.f  = 160.0f * kMenuZoomScale;
+        vanityModeMaxDist->data.f  = 160.0f * kMenuZoomScale;
     }
     else if (isBeastForm) {
         fNewOverShoulderCombatPosZ = -32.0f + (target->GetHeight() - 130);
-        vanityModeMinDist->data.f  = 210.0f;
-        vanityModeMaxDist->data.f  = 210.0f;
+        vanityModeMinDist->data.f  = 210.0f * kMenuZoomScale;
+        vanityModeMaxDist->data.f  = 210.0f * kMenuZoomScale;
     }
     else if (isVampireLord) {
         fNewOverShoulderCombatPosZ = -37.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 165.0f;
-        vanityModeMaxDist->data.f  = 165.0f;
+        vanityModeMinDist->data.f  = 165.0f * kMenuZoomScale;
+        vanityModeMaxDist->data.f  = 165.0f * kMenuZoomScale;
     }
     else if (target->AsActorState()->IsWeaponDrawn()) {
         fNewOverShoulderCombatPosZ = -32.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 165.0f;
-        vanityModeMaxDist->data.f  = 165.0f;
+        vanityModeMinDist->data.f  = 165.0f * kMenuZoomScale;
+        vanityModeMaxDist->data.f  = 165.0f * kMenuZoomScale;
     }
     else {
         fNewOverShoulderCombatPosZ = -22.0f + (target->GetHeight() - 128);
-        vanityModeMinDist->data.f  = 155.0f;
-        vanityModeMaxDist->data.f  = 155.0f;
+        vanityModeMinDist->data.f  = 155.0f * kMenuZoomScale;
+        vanityModeMaxDist->data.f  = 155.0f * kMenuZoomScale;
     }
 
     thirdState->freeRotation.x = MATH_PI - 0.5f;
@@ -694,6 +697,15 @@ void UnfreezeNPC(RE::Actor* a_actor)
     }
 
     a_actor->EnableAI(true);
+}
+
+void CancelPlayerAutoMove()
+{
+    auto* controls = RE::PlayerControls::GetSingleton();
+    if (!controls) {
+        return;
+    }
+    controls->data.autoMove = false;
 }
 
 const TESClass* GetBestMatchingClass(const std::vector<TESClass>& classes, const std::unordered_map<std::string, float>& skillLevels)

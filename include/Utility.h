@@ -172,6 +172,7 @@ bool IsPlayersMount(const RE::Actor* actor);
 bool IsTargetsMount(const RE::Actor* actor, RE::Actor* target);
 void LoadDataFromINI();
 void LoadCameraSettings();
+void RotateMenuCameraWithStick(float a_x);
 static bool IsPlayerInFactionWithRank(const std::string& factionEdid);
 
 #endif  // UTILITY_H

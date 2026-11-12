@@ -137,6 +137,19 @@ RE::BSEventNotifyControl EventProcessor::ProcessEvent(RE::InputEvent* const* eve
         return RE::BSEventNotifyControl::kContinue;
     }
     auto* event = *eventPtr;
+
+    // Right stick orbits the camera while the menu is open (the game only does this for the mouse).
+    if (auto* ui = RE::UI::GetSingleton(); ui && ui->IsMenuOpen(Scaleform::CharacterSheet::MENU_NAME)) {
+        for (auto* e = *eventPtr; e; e = e->next) {
+            if (e->eventType == RE::INPUT_EVENT_TYPE::kThumbstick) {
+                auto* stick = static_cast<RE::ThumbstickEvent*>(e);
+                if (stick->idCode == RE::ThumbstickEvent::InputType::kRightThumbstick) {
+                    RotateMenuCameraWithStick(stick->xValue);
+                }
+            }
+        }
+    }
+
     if (event->eventType == RE::INPUT_EVENT_TYPE::kButton) {
         auto* buttonEvent = event->AsButtonEvent();
         auto dxScanCode = buttonEvent->GetIDCode();

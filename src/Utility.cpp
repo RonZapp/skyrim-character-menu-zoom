@@ -15,6 +15,9 @@ static float g_camZoomScale        = 0.80f;
 static float g_camDistanceOverride = 0.0f;
 static float g_camOffsetX          = 0.0f;
 static float g_camOffsetZ          = 0.0f;
+// Right stick camera rotation while the menu is open, in radians per second at full tilt.
+// 0 disables it, a negative value reverses the direction.
+static float g_camStickRotateSpeed = 2.0f;
 
 static RE::NiPoint3                     g_savedThirdPersonTranslation;
 static RE::NiPoint3                     g_savedPosOffsetActual;
@@ -349,8 +352,37 @@ void LoadCameraSettings()
     g_camDistanceOverride = static_cast<float>(ini.GetDoubleValue("Camera", "fDistanceOverride", 0.0));
     g_camOffsetX          = static_cast<float>(ini.GetDoubleValue("Camera", "fOffsetX", 0.0));
     g_camOffsetZ          = static_cast<float>(ini.GetDoubleValue("Camera", "fOffsetZ", 0.0));
-    logger::info("Camera settings: zoomScale={} distanceOverride={} offsetX={} offsetZ={}", g_camZoomScale,
-                 g_camDistanceOverride, g_camOffsetX, g_camOffsetZ);
+    g_camStickRotateSpeed = static_cast<float>(ini.GetDoubleValue("Camera", "fGamepadRotateSpeed", 2.0));
+    logger::info("Camera settings: zoomScale={} distanceOverride={} offsetX={} offsetZ={} gamepadRotateSpeed={}",
+                 g_camZoomScale, g_camDistanceOverride, g_camOffsetX, g_camOffsetZ, g_camStickRotateSpeed);
+}
+
+// Called for every right thumbstick event while the Character Menu is open: orbits the menu camera
+// horizontally, the same way moving the mouse does.
+void RotateMenuCameraWithStick(float a_x)
+{
+    static std::chrono::steady_clock::time_point last{};
+    const auto now = std::chrono::steady_clock::now();
+    float      dt  = std::chrono::duration<float>(now - last).count();
+    last           = now;
+    if (dt > 0.05f) {
+        dt = 0.05f;  // first event after a pause, or a slow frame
+    }
+    if (g_camStickRotateSpeed == 0.0f || std::fabs(a_x) < 0.15f) {
+        return;
+    }
+    auto* camera = RE::PlayerCamera::GetSingleton();
+    if (!camera) {
+        return;
+    }
+    auto& states = camera->GetRuntimeData().cameraStates;
+    auto* state  = camera->currentState == states[RE::CameraState::kMount]
+                       ? static_cast<RE::ThirdPersonState*>(states[RE::CameraState::kMount].get())
+                       : static_cast<RE::ThirdPersonState*>(states[RE::CameraState::kThirdPerson].get());
+    if (!state) {
+        return;
+    }
+    state->freeRotation.x += a_x * g_camStickRotateSpeed * dt;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
